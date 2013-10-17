@@ -1,9 +1,67 @@
 <!DOCTYPE html>
 <html>
   <body>
-  <div id="heading">
-    <h1>Something here</h1>
-  </div>
+
+  <script src="/jquery-1.7.1.min.js"></script>
+  <script src="/d3.v2.min.js"></script>
   <script src="/development.js"></script>
+  <script type="text/javascript">
+
+    evilGlobalState = {};
+    egs = evilGlobalState;
+
+    $(document).ready(function(){
+
+    window.initWorld = function(size){
+    egs.fill = d3.scale.category20c();
+    egs.scaleX = d3.scale.linear().domain([0, size]).range([0,1000]);
+    egs.scaleY = d3.scale.linear().domain([0, size]).range([0,1000]);
+
+    d3.select("#container").select("svg").remove();
+    egs.vis =  d3.select("#container").append("svg")
+    .attr("width", 1000)
+    .attr("height", 1000)
+    .attr("class", "stuff")
+    .attr("style", "border: 1px green solid; background-color:black");
+    
+
+    };
+
+    drawBirds = function(birds) {
+    var node = egs.vis.selectAll("g.node")
+    .data(birds)
+    .enter().append("g")
+    .filter(function(d) { return true;})
+    .attr("class", "node")
+    .attr("transform", function(d) { return "translate(" + egs.scaleX(d.x) + "," + egs.scaleY(d.y) + ")"; });
+    
+    node.append("circle")
+    .attr("r", 0)
+    .transition().duration(10)
+    .attr("r", function(d) { return egs.scaleX(d.r); })
+    .style("fill", function(d) { return egs.fill(d.id); });
+    }
+    });
+    
+    makeBird = function(id,x,y){
+       var bird = {};
+       bird.x = x;
+       bird.y = y;
+       bird.r = 3;
+       bird.id = id;
+       return bird;
+    }
+    fakeBirds = function(){
+        var birds = [makeBird("bob", 10,10), makeBird("frank", 50,50)];
+
+    return birds;
+
+    };
+  </script>
+  <div id="container"></div>
+  <canvas>
+    <g>
+      </g>
+  </canvas>
   </body>
 </html>
