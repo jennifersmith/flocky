@@ -4,13 +4,15 @@
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def size 1000)
-(def nbirds 100)
+(def nbirds 50)
 ;; basically timeout between drawing frames
 
 (def anim-delay 50)
 ;; pix / ms
 (def max-speed 0.1)
 (def min-speed 0.05)
+(def min-turn-percent 0.0005)
+(def min-turn (* 2 Math/PI min-turn-percent))
 
 (defn rand-ints [n] (repeatedly #(rand-int n)))
 
@@ -39,6 +41,11 @@
              (map wrap-coord))]
     (assoc result :coords new-coords)))
 
+(defn update-bird [bird]
+  (let [ turn-by (* min-turn (rand))
+        ]
+    (update-in bird [:heading] (partial + turn-by))))
+
 (defn init-world! []
   (js/initWorld size))
 
@@ -54,7 +61,7 @@
              positions (map starting-position the-birds)]
         (update-world! (map merge positions the-birds))
         (<! (timeout anim-delay))
-        (recur the-birds (map update-position the-birds positions)))))
+        (recur (map update-bird the-birds) (map update-position the-birds positions)))))
 
 ;; do stuff
 
