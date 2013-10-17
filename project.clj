@@ -9,13 +9,12 @@
                  [compojure "1.1.5"]
                  [hiccup "1.0.3"]
                  [domina "1.0.2-SNAPSHOT"]
-                 [org.clojure/data.json "0.2.2"]
                  [com.cemerick/piggieback "0.1.0"]
                  ]
   :source-paths ["src/clj"]
 
   :plugins [[lein-cljsbuild "0.3.2"]
-            [lein-ring "0.8.5"]]
+            [lein-ring "0.8.7"]]
 
   :ring {:handler flocky.handler/app}
 
