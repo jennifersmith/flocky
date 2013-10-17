@@ -10,8 +10,6 @@
     evilGlobalState = {};
     egs = evilGlobalState;
 
-    $(document).ready(function(){
-
     window.initWorld = function(size){
     egs.fill = d3.scale.category20c();
     egs.scaleX = d3.scale.linear().domain([0, size]).range([0,1000]);
@@ -28,20 +26,19 @@
     };
 
     drawBirds = function(birds) {
+    console.log(birds[0].x);
     var node = egs.vis.selectAll("g.node")
-    .data(birds)
+    .data(birds, function(d){return d.id})
+    .attr("transform", function(d) { return "translate(" + egs.scaleX(d.x) + "," + egs.scaleY(d.y) + ")"; })
     .enter().append("g")
-    .filter(function(d) { return true;})
-    .attr("class", "node")
-    .attr("transform", function(d) { return "translate(" + egs.scaleX(d.x) + "," + egs.scaleY(d.y) + ")"; });
-    
+    .attr("class", "node");
+
     node.append("circle")
     .attr("r", 0)
     .transition().duration(10)
     .attr("r", function(d) { return egs.scaleX(d.r); })
     .style("fill", function(d) { return egs.fill(d.id); });
     }
-    });
     
     makeBird = function(id,x,y){
        var bird = {};
