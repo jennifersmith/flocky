@@ -13,11 +13,13 @@
 (def min-speed 0.05)
 (def min-turn-percent 0.0005)
 (def min-turn (* 2 Math/PI min-turn-percent))
+(def vision 100)
+(def separation 40)
 
 (defn rand-ints [n] (repeatedly #(rand-int n)))
 
 (defn starting-position []
-  {:heading (* (rand) Math/PI 2)
+  {
    :coords [(rand-int size) (rand-int size)]})
 
 (defn rand-bird [id]
@@ -41,10 +43,42 @@
              (map wrap-coord))]
     (assoc result :coords new-coords)))
 
-(defn update-bird [bird]
-  (let [ turn-by (* min-turn (rand))
+(defn separation [pos1 pos2]
+  (Math/sqrt
+   (apply + (map #(Math/pow % 2) (map - (:coords pos1) (:coords pos2))))))
+
+(defn all-differences [positions]
+  (vec
+   (for [pos1 positions]
+     (vec
+      (for [pos2 positions]
+        (separation pos1 pos2))))))
+
+(defn in-range? [x]
+  (< x vision))
+
+
+(defn dmap [f c]
+  (map #(map f %) c))
+
+;; pieceofcrap
+(defn get-neighbours [birds bird-positions]
+  (let [birds-and-pos (map vector birds bird-positions)]
+    (for [[b p] birds-and-pos]
+      (vec
+       (map first
+            (filter #(and
+                      (not= b (first %))
+                      (in-range?
+                       (separation p (last %))))
+                    birds-and-pos))))))
+
+(defn update-bird [bird neighbours]
+  (let [ turn-by (* min-turn )
         ]
-    (update-in bird [:heading] (partial + turn-by))))
+    (-> bird
+        (assoc :col (count neighbours))
+        (update-in [:heading] (partial + turn-by)))))
 
 (defn init-world! []
   (js/initWorld size))
@@ -61,7 +95,7 @@
              positions (map starting-position the-birds)]
         (update-world! (map merge positions the-birds))
         (<! (timeout anim-delay))
-        (recur (map update-bird the-birds) (map update-position the-birds positions)))))
+        (recur (map update-bird the-birds (get-neighbours the-birds positions)) (map update-position the-birds positions)))))
 
 ;; do stuff
 
