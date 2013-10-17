@@ -4,7 +4,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def size 1000)
-(def nbirds 50)
+(def nbirds 10)
 ;; basically timeout between drawing frames
 
 (def anim-delay 50)
@@ -28,8 +28,8 @@
    :r 1  :id id})
 
 (defn wrap-coord [n]
-  (cond (> n size) (- n size)
-        (< n 0) (- n size)
+  (cond (>= n size) (- n size)
+        (< n 0) (- size (* -1 n))
         :else n))
 
 (def xy-components (juxt Math/sin Math/cos))
@@ -43,9 +43,13 @@
              (map wrap-coord))]
     (assoc result :coords new-coords)))
 
-(defn separation [pos1 pos2]
-  (Math/sqrt
-   (apply + (map #(Math/pow % 2) (map - (:coords pos1) (:coords pos2))))))
+(def separation (memoize (fn [pos1 pos2]
+                           (Math/sqrt
+                            (apply +
+                                   (map #(Math/pow % 2)
+                                        (map -
+                                             (:coords pos1)
+                                             (:coords pos2))))))))
 
 (defn all-differences [positions]
   (vec
@@ -95,7 +99,9 @@
              positions (map starting-position the-birds)]
         (update-world! (map merge positions the-birds))
         (<! (timeout anim-delay))
-        (recur (map update-bird the-birds (get-neighbours the-birds positions)) (map update-position the-birds positions)))))
+        (recur (map update-bird the-birds
+                    (get-neighbours the-birds positions))
+               (map update-position the-birds positions)))))
 
 ;; do stuff
 

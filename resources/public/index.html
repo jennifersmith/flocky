@@ -42,7 +42,6 @@
      rects
       .attr("transform", function(d) { return "rotate("+ (360 - (d.heading/Math.PI * 180)) +")"; })
       .style("fill", function(d, i) {  return egs.fill(d.col); });
-    
     }
     
     makeBird = function(id,x,y){
