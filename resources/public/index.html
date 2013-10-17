@@ -26,15 +26,17 @@
     };
 
     drawBirds = function(birds) {
-    console.log(birds);
+
     var node = egs.vis.selectAll("g.node")
     .data(birds)
     .attr("transform", function(d) { return "translate(" + egs.scaleX(d.coords[0]) + "," + egs.scaleY(d.coords[1]) + ")"; })
     .enter().append("g")
     .attr("class", "node");
 
-    node.append("circle")
-    .attr("r", function(d) { return egs.scaleX(1); })
+    node.append("rect")
+    .attr("width", function(d) { return egs.scaleX(5); })
+    .attr("height", function(d) { return egs.scaleX(10); })
+    .attr("transform", function(d) { return "rotate("+ (360 - (d.heading/Math.PI * 180)) +")"; })
     .style("fill", function(d, i) { return egs.fill(i); });
     }
     
