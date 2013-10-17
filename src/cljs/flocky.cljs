@@ -14,7 +14,7 @@
 (def min-turn-percent 0.0005)
 (def min-turn (* 2 Math/PI min-turn-percent))
 (def vision 100)
-(def separation 40)
+(def min-separation 40)
 
 (defn rand-ints [n] (repeatedly #(rand-int n)))
 
@@ -69,19 +69,16 @@
 (defn get-neighbours [birds bird-positions]
   (let [birds-and-pos (map vector birds bird-positions)]
     (for [[b p] birds-and-pos]
-      (vec
-       (map first
-            (filter #(and
-                      (not= b (first %))
-                      (in-range?
-                       (separation p (last %))))
-                    birds-and-pos))))))
+      (remove #(= b (first %))
+              (map vector
+                   birds
+                   (map #(separation p %) bird-positions))))))
 
 (defn update-bird [bird neighbours]
-  (let [ turn-by (* min-turn )
-        ]
+  (let [turn-by (* min-turn )
+        in-range (filter #(in-range? (second %)) neighbours)]
     (-> bird
-        (assoc :col (count neighbours))
+        (assoc :col (count in-range))
         (update-in [:heading] (partial + turn-by)))))
 
 (defn init-world! []
