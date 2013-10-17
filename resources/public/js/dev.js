@@ -499,6 +499,19 @@ goog.base = function(me, opt_methodName, var_args) {
 goog.scope = function(fn) {
   fn.call(goog.global)
 };
+goog.provide("goog.debug.Error");
+goog.debug.Error = function(opt_msg) {
+  if(Error.captureStackTrace) {
+    Error.captureStackTrace(this, goog.debug.Error)
+  }else {
+    this.stack = (new Error).stack || ""
+  }
+  if(opt_msg) {
+    this.message = String(opt_msg)
+  }
+};
+goog.inherits(goog.debug.Error, Error);
+goog.debug.Error.prototype.name = "CustomError";
 goog.provide("goog.string");
 goog.provide("goog.string.Unicode");
 goog.string.Unicode = {NBSP:"\u00a0"};
@@ -939,19 +952,6 @@ goog.string.parseInt = function(value) {
   }
   return NaN
 };
-goog.provide("goog.debug.Error");
-goog.debug.Error = function(opt_msg) {
-  if(Error.captureStackTrace) {
-    Error.captureStackTrace(this, goog.debug.Error)
-  }else {
-    this.stack = (new Error).stack || ""
-  }
-  if(opt_msg) {
-    this.message = String(opt_msg)
-  }
-};
-goog.inherits(goog.debug.Error, Error);
-goog.debug.Error.prototype.name = "CustomError";
 goog.provide("goog.asserts");
 goog.provide("goog.asserts.AssertionError");
 goog.require("goog.debug.Error");
@@ -23804,6 +23804,130 @@ clojure.browser.event.has_listener = function has_listener(obj, opt_type, opt_ca
 clojure.browser.event.remove_all = function remove_all(opt_obj, opt_type, opt_capt) {
   return null
 };
+goog.provide("goog.json");
+goog.provide("goog.json.Serializer");
+goog.json.isValid_ = function(s) {
+  if(/^\s*$/.test(s)) {
+    return false
+  }
+  var backslashesRe = /\\["\\\/bfnrtu]/g;
+  var simpleValuesRe = /"[^"\\\n\r\u2028\u2029\x00-\x08\x0a-\x1f]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g;
+  var openBracketsRe = /(?:^|:|,)(?:[\s\u2028\u2029]*\[)+/g;
+  var remainderRe = /^[\],:{}\s\u2028\u2029]*$/;
+  return remainderRe.test(s.replace(backslashesRe, "@").replace(simpleValuesRe, "]").replace(openBracketsRe, ""))
+};
+goog.json.parse = function(s) {
+  var o = String(s);
+  if(goog.json.isValid_(o)) {
+    try {
+      return(eval("(" + o + ")"))
+    }catch(ex) {
+    }
+  }
+  throw Error("Invalid JSON string: " + o);
+};
+goog.json.unsafeParse = function(s) {
+  return(eval("(" + s + ")"))
+};
+goog.json.Replacer;
+goog.json.Reviver;
+goog.json.serialize = function(object, opt_replacer) {
+  return(new goog.json.Serializer(opt_replacer)).serialize(object)
+};
+goog.json.Serializer = function(opt_replacer) {
+  this.replacer_ = opt_replacer
+};
+goog.json.Serializer.prototype.serialize = function(object) {
+  var sb = [];
+  this.serialize_(object, sb);
+  return sb.join("")
+};
+goog.json.Serializer.prototype.serialize_ = function(object, sb) {
+  switch(typeof object) {
+    case "string":
+      this.serializeString_((object), sb);
+      break;
+    case "number":
+      this.serializeNumber_((object), sb);
+      break;
+    case "boolean":
+      sb.push(object);
+      break;
+    case "undefined":
+      sb.push("null");
+      break;
+    case "object":
+      if(object == null) {
+        sb.push("null");
+        break
+      }
+      if(goog.isArray(object)) {
+        this.serializeArray((object), sb);
+        break
+      }
+      this.serializeObject_((object), sb);
+      break;
+    case "function":
+      break;
+    default:
+      throw Error("Unknown type: " + typeof object);
+  }
+};
+goog.json.Serializer.charToJsonCharCache_ = {'"':'\\"', "\\":"\\\\", "/":"\\/", "\b":"\\b", "\f":"\\f", "\n":"\\n", "\r":"\\r", "\t":"\\t", "\x0B":"\\u000b"};
+goog.json.Serializer.charsToReplace_ = /\uffff/.test("\uffff") ? /[\\\"\x00-\x1f\x7f-\uffff]/g : /[\\\"\x00-\x1f\x7f-\xff]/g;
+goog.json.Serializer.prototype.serializeString_ = function(s, sb) {
+  sb.push('"', s.replace(goog.json.Serializer.charsToReplace_, function(c) {
+    if(c in goog.json.Serializer.charToJsonCharCache_) {
+      return goog.json.Serializer.charToJsonCharCache_[c]
+    }
+    var cc = c.charCodeAt(0);
+    var rv = "\\u";
+    if(cc < 16) {
+      rv += "000"
+    }else {
+      if(cc < 256) {
+        rv += "00"
+      }else {
+        if(cc < 4096) {
+          rv += "0"
+        }
+      }
+    }
+    return goog.json.Serializer.charToJsonCharCache_[c] = rv + cc.toString(16)
+  }), '"')
+};
+goog.json.Serializer.prototype.serializeNumber_ = function(n, sb) {
+  sb.push(isFinite(n) && !isNaN(n) ? n : "null")
+};
+goog.json.Serializer.prototype.serializeArray = function(arr, sb) {
+  var l = arr.length;
+  sb.push("[");
+  var sep = "";
+  for(var i = 0;i < l;i++) {
+    sb.push(sep);
+    var value = arr[i];
+    this.serialize_(this.replacer_ ? this.replacer_.call(arr, String(i), value) : value, sb);
+    sep = ","
+  }
+  sb.push("]")
+};
+goog.json.Serializer.prototype.serializeObject_ = function(obj, sb) {
+  sb.push("{");
+  var sep = "";
+  for(var key in obj) {
+    if(Object.prototype.hasOwnProperty.call(obj, key)) {
+      var value = obj[key];
+      if(typeof value != "function") {
+        sb.push(sep);
+        this.serializeString_(key, sb);
+        sb.push(":");
+        this.serialize_(this.replacer_ ? this.replacer_.call(obj, key, value) : value, sb);
+        sep = ","
+      }
+    }
+  }
+  sb.push("}")
+};
 goog.provide("goog.structs");
 goog.require("goog.array");
 goog.require("goog.object");
@@ -27084,130 +27208,6 @@ goog.events.EventHandler.prototype.disposeInternal = function() {
 };
 goog.events.EventHandler.prototype.handleEvent = function(e) {
   throw Error("EventHandler.handleEvent not implemented");
-};
-goog.provide("goog.json");
-goog.provide("goog.json.Serializer");
-goog.json.isValid_ = function(s) {
-  if(/^\s*$/.test(s)) {
-    return false
-  }
-  var backslashesRe = /\\["\\\/bfnrtu]/g;
-  var simpleValuesRe = /"[^"\\\n\r\u2028\u2029\x00-\x08\x0a-\x1f]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g;
-  var openBracketsRe = /(?:^|:|,)(?:[\s\u2028\u2029]*\[)+/g;
-  var remainderRe = /^[\],:{}\s\u2028\u2029]*$/;
-  return remainderRe.test(s.replace(backslashesRe, "@").replace(simpleValuesRe, "]").replace(openBracketsRe, ""))
-};
-goog.json.parse = function(s) {
-  var o = String(s);
-  if(goog.json.isValid_(o)) {
-    try {
-      return(eval("(" + o + ")"))
-    }catch(ex) {
-    }
-  }
-  throw Error("Invalid JSON string: " + o);
-};
-goog.json.unsafeParse = function(s) {
-  return(eval("(" + s + ")"))
-};
-goog.json.Replacer;
-goog.json.Reviver;
-goog.json.serialize = function(object, opt_replacer) {
-  return(new goog.json.Serializer(opt_replacer)).serialize(object)
-};
-goog.json.Serializer = function(opt_replacer) {
-  this.replacer_ = opt_replacer
-};
-goog.json.Serializer.prototype.serialize = function(object) {
-  var sb = [];
-  this.serialize_(object, sb);
-  return sb.join("")
-};
-goog.json.Serializer.prototype.serialize_ = function(object, sb) {
-  switch(typeof object) {
-    case "string":
-      this.serializeString_((object), sb);
-      break;
-    case "number":
-      this.serializeNumber_((object), sb);
-      break;
-    case "boolean":
-      sb.push(object);
-      break;
-    case "undefined":
-      sb.push("null");
-      break;
-    case "object":
-      if(object == null) {
-        sb.push("null");
-        break
-      }
-      if(goog.isArray(object)) {
-        this.serializeArray((object), sb);
-        break
-      }
-      this.serializeObject_((object), sb);
-      break;
-    case "function":
-      break;
-    default:
-      throw Error("Unknown type: " + typeof object);
-  }
-};
-goog.json.Serializer.charToJsonCharCache_ = {'"':'\\"', "\\":"\\\\", "/":"\\/", "\b":"\\b", "\f":"\\f", "\n":"\\n", "\r":"\\r", "\t":"\\t", "\x0B":"\\u000b"};
-goog.json.Serializer.charsToReplace_ = /\uffff/.test("\uffff") ? /[\\\"\x00-\x1f\x7f-\uffff]/g : /[\\\"\x00-\x1f\x7f-\xff]/g;
-goog.json.Serializer.prototype.serializeString_ = function(s, sb) {
-  sb.push('"', s.replace(goog.json.Serializer.charsToReplace_, function(c) {
-    if(c in goog.json.Serializer.charToJsonCharCache_) {
-      return goog.json.Serializer.charToJsonCharCache_[c]
-    }
-    var cc = c.charCodeAt(0);
-    var rv = "\\u";
-    if(cc < 16) {
-      rv += "000"
-    }else {
-      if(cc < 256) {
-        rv += "00"
-      }else {
-        if(cc < 4096) {
-          rv += "0"
-        }
-      }
-    }
-    return goog.json.Serializer.charToJsonCharCache_[c] = rv + cc.toString(16)
-  }), '"')
-};
-goog.json.Serializer.prototype.serializeNumber_ = function(n, sb) {
-  sb.push(isFinite(n) && !isNaN(n) ? n : "null")
-};
-goog.json.Serializer.prototype.serializeArray = function(arr, sb) {
-  var l = arr.length;
-  sb.push("[");
-  var sep = "";
-  for(var i = 0;i < l;i++) {
-    sb.push(sep);
-    var value = arr[i];
-    this.serialize_(this.replacer_ ? this.replacer_.call(arr, String(i), value) : value, sb);
-    sep = ","
-  }
-  sb.push("]")
-};
-goog.json.Serializer.prototype.serializeObject_ = function(obj, sb) {
-  sb.push("{");
-  var sep = "";
-  for(var key in obj) {
-    if(Object.prototype.hasOwnProperty.call(obj, key)) {
-      var value = obj[key];
-      if(typeof value != "function") {
-        sb.push(sep);
-        this.serializeString_(key, sb);
-        sb.push(":");
-        this.serialize_(this.replacer_ ? this.replacer_.call(obj, key, value) : value, sb);
-        sep = ","
-      }
-    }
-  }
-  sb.push("}")
 };
 goog.provide("goog.structs.Collection");
 goog.structs.Collection = function() {
@@ -36515,15 +36515,17 @@ goog.require("cljs.core.async");
 cljs.flocky.size = 1E3;
 cljs.flocky.nbirds = 20;
 cljs.flocky.anim_delay = 50;
-cljs.flocky.speed = 0.01;
-cljs.flocky.delta = cljs.flocky.speed * cljs.flocky.anim_delay;
+cljs.flocky.max_speed = 0.05;
 cljs.flocky.rand_ints = function rand_ints(n) {
   return cljs.core.repeatedly.call(null, function() {
     return cljs.core.rand_int.call(null, n)
   })
 };
+cljs.flocky.starting_position = function starting_position() {
+  return cljs.core.PersistentArrayMap.fromArray([new cljs.core.Keyword(null, "coords", "coords", 3954120592), cljs.core.PersistentVector.fromArray([cljs.core.rand_int.call(null, cljs.flocky.size), cljs.core.rand_int.call(null, cljs.flocky.size)], true)], true)
+};
 cljs.flocky.rand_bird = function rand_bird(id) {
-  return cljs.core.PersistentArrayMap.fromArray([new cljs.core.Keyword(null, "x", "x", 1013904362), cljs.core.rand_int.call(null, cljs.flocky.size), new cljs.core.Keyword(null, "y", "y", 1013904363), cljs.core.rand_int.call(null, cljs.flocky.size), new cljs.core.Keyword(null, "r", "r", 1013904356), 1, new cljs.core.Keyword(null, "heading", "heading", 1809215860), 0, new cljs.core.Keyword(null, "id", "id", 1013907597), id], true)
+  return cljs.core.PersistentArrayMap.fromArray([new cljs.core.Keyword(null, "delta", "delta", 1109372714), cljs.flocky.anim_delay * cljs.flocky.max_speed * cljs.core.rand.call(null), new cljs.core.Keyword(null, "r", "r", 1013904356), 1, new cljs.core.Keyword(null, "heading", "heading", 1809215860), 0, new cljs.core.Keyword(null, "id", "id", 1013907597), id], true)
 };
 cljs.flocky.wrap_coord = function wrap_coord(n) {
   if(n > cljs.flocky.size) {
@@ -36540,80 +36542,84 @@ cljs.flocky.wrap_coord = function wrap_coord(n) {
     }
   }
 };
-cljs.flocky.update_position = function update_position(p__218462) {
-  var map__218465 = p__218462;
-  var map__218465__$1 = cljs.core.seq_QMARK_.call(null, map__218465) ? cljs.core.apply.call(null, cljs.core.hash_map, map__218465) : map__218465;
-  var result = map__218465__$1;
-  var y = cljs.core.get.call(null, map__218465__$1, new cljs.core.Keyword(null, "y", "y", 1013904363));
-  var x = cljs.core.get.call(null, map__218465__$1, new cljs.core.Keyword(null, "x", "x", 1013904362));
-  var vec__218466 = cljs.core.map.call(null, cljs.core.comp.call(null, function(p1__218461_SHARP_) {
-    return p1__218461_SHARP_ + cljs.flocky.delta
-  }, cljs.flocky.wrap_coord), cljs.core.PersistentVector.fromArray([x, y], true));
-  var x__$1 = cljs.core.nth.call(null, vec__218466, 0, null);
-  var y__$1 = cljs.core.nth.call(null, vec__218466, 1, null);
-  return cljs.core.merge.call(null, result, cljs.core.PersistentArrayMap.fromArray([new cljs.core.Keyword(null, "x", "x", 1013904362), x__$1, new cljs.core.Keyword(null, "y", "y", 1013904363), y__$1], true))
-};
-cljs.flocky.inc_bird = function inc_bird(bird) {
-  return cljs.flocky.update_position.call(null, bird)
+cljs.flocky.update_position = function update_position(p__13425, p__13426) {
+  var map__13429 = p__13425;
+  var map__13429__$1 = cljs.core.seq_QMARK_.call(null, map__13429) ? cljs.core.apply.call(null, cljs.core.hash_map, map__13429) : map__13429;
+  var delta = cljs.core.get.call(null, map__13429__$1, new cljs.core.Keyword(null, "delta", "delta", 1109372714));
+  var map__13430 = p__13426;
+  var map__13430__$1 = cljs.core.seq_QMARK_.call(null, map__13430) ? cljs.core.apply.call(null, cljs.core.hash_map, map__13430) : map__13430;
+  var result = map__13430__$1;
+  var coords = cljs.core.get.call(null, map__13430__$1, new cljs.core.Keyword(null, "coords", "coords", 3954120592));
+  var new_coords = cljs.core.map.call(null, cljs.flocky.wrap_coord, cljs.core.map.call(null, function(p1__13424_SHARP_) {
+    return delta + p1__13424_SHARP_
+  }, coords));
+  return cljs.core.assoc.call(null, result, new cljs.core.Keyword(null, "coords", "coords", 3954120592), new_coords)
 };
 cljs.flocky.init_world_BANG_ = function init_world_BANG_() {
   return initWorld(cljs.flocky.size)
 };
-cljs.flocky.update_world_BANG_ = function update_world_BANG_(birds) {
-  return drawBirds(cljs.core.clj__GT_js.call(null, cljs.core.map.call(null, cljs.core.clj__GT_js, birds)))
+cljs.flocky.update_world_BANG_ = function update_world_BANG_(positions) {
+  return drawBirds(cljs.core.clj__GT_js.call(null, cljs.core.map.call(null, cljs.core.clj__GT_js, positions)))
 };
 cljs.flocky.draw_loop_BANG_ = function draw_loop_BANG_() {
   cljs.flocky.init_world_BANG_.call(null);
   var c__5119__auto__ = cljs.core.async.chan.call(null, 1);
   cljs.core.async.impl.dispatch.run.call(null, function() {
     var f__5120__auto__ = function() {
-      var switch__5069__auto__ = function(state_218505) {
-        var state_val_218506 = state_218505[1];
-        if(state_val_218506 === 4) {
-          var inst_218494 = state_218505[5];
-          var inst_218499 = state_218505[2];
-          var inst_218500 = cljs.core.map.call(null, cljs.flocky.inc_bird, inst_218494);
-          var inst_218494__$1 = inst_218500;
-          var state_218505__$1 = function() {
-            var statearr_218507 = state_218505;
-            statearr_218507[6] = inst_218499;
-            statearr_218507[5] = inst_218494__$1;
-            return statearr_218507
+      var switch__5069__auto__ = function(state_13474) {
+        var state_val_13475 = state_13474[1];
+        if(state_val_13475 === 4) {
+          var inst_13463 = state_13474[5];
+          var inst_13462 = state_13474[6];
+          var inst_13468 = state_13474[2];
+          var inst_13469 = cljs.core.map.call(null, cljs.flocky.update_position, inst_13462, inst_13463);
+          var tmp13476 = inst_13462;
+          var inst_13462__$1 = tmp13476;
+          var inst_13463__$1 = inst_13469;
+          var state_13474__$1 = function() {
+            var statearr_13477 = state_13474;
+            statearr_13477[7] = inst_13468;
+            statearr_13477[5] = inst_13463__$1;
+            statearr_13477[6] = inst_13462__$1;
+            return statearr_13477
           }();
-          var statearr_218508_218515 = state_218505__$1;
-          statearr_218508_218515[2] = null;
-          statearr_218508_218515[1] = 2;
+          var statearr_13478_13485 = state_13474__$1;
+          statearr_13478_13485[2] = null;
+          statearr_13478_13485[1] = 2;
           return new cljs.core.Keyword(null, "recur", "recur", 1122293407)
         }else {
-          if(state_val_218506 === 3) {
-            var inst_218503 = state_218505[2];
-            var state_218505__$1 = state_218505;
-            return cljs.core.async.impl.ioc_helpers.return_chan.call(null, state_218505__$1, inst_218503)
+          if(state_val_13475 === 3) {
+            var inst_13472 = state_13474[2];
+            var state_13474__$1 = state_13474;
+            return cljs.core.async.impl.ioc_helpers.return_chan.call(null, state_13474__$1, inst_13472)
           }else {
-            if(state_val_218506 === 2) {
-              var inst_218494 = state_218505[5];
-              var inst_218496 = cljs.flocky.update_world_BANG_.call(null, inst_218494);
-              var inst_218497 = cljs.core.async.timeout.call(null, cljs.flocky.anim_delay);
-              var state_218505__$1 = function() {
-                var statearr_218509 = state_218505;
-                statearr_218509[7] = inst_218496;
-                return statearr_218509
+            if(state_val_13475 === 2) {
+              var inst_13463 = state_13474[5];
+              var inst_13465 = cljs.flocky.update_world_BANG_.call(null, inst_13463);
+              var inst_13466 = cljs.core.async.timeout.call(null, cljs.flocky.anim_delay);
+              var state_13474__$1 = function() {
+                var statearr_13479 = state_13474;
+                statearr_13479[8] = inst_13465;
+                return statearr_13479
               }();
-              return cljs.core.async.impl.ioc_helpers.take_BANG_.call(null, state_218505__$1, 4, inst_218497)
+              return cljs.core.async.impl.ioc_helpers.take_BANG_.call(null, state_13474__$1, 4, inst_13466)
             }else {
-              if(state_val_218506 === 1) {
-                var inst_218491 = cljs.core.range.call(null, cljs.flocky.nbirds);
-                var inst_218492 = cljs.core.map.call(null, cljs.flocky.rand_bird, inst_218491);
-                var inst_218493 = cljs.core.vec.call(null, inst_218492);
-                var inst_218494 = inst_218493;
-                var state_218505__$1 = function() {
-                  var statearr_218510 = state_218505;
-                  statearr_218510[5] = inst_218494;
-                  return statearr_218510
+              if(state_val_13475 === 1) {
+                var inst_13458 = cljs.core.range.call(null, cljs.flocky.nbirds);
+                var inst_13459 = cljs.core.map.call(null, cljs.flocky.rand_bird, inst_13458);
+                var inst_13460 = cljs.core.vec.call(null, inst_13459);
+                var inst_13461 = cljs.core.map.call(null, cljs.flocky.starting_position, inst_13460);
+                var inst_13462 = inst_13460;
+                var inst_13463 = inst_13461;
+                var state_13474__$1 = function() {
+                  var statearr_13480 = state_13474;
+                  statearr_13480[5] = inst_13463;
+                  statearr_13480[6] = inst_13462;
+                  return statearr_13480
                 }();
-                var statearr_218511_218516 = state_218505__$1;
-                statearr_218511_218516[2] = null;
-                statearr_218511_218516[1] = 2;
+                var statearr_13481_13486 = state_13474__$1;
+                statearr_13481_13486[2] = null;
+                statearr_13481_13486[1] = 2;
                 return new cljs.core.Keyword(null, "recur", "recur", 1122293407)
               }else {
                 return null
@@ -36626,14 +36632,14 @@ cljs.flocky.draw_loop_BANG_ = function draw_loop_BANG_() {
         return function() {
           var state_machine__5070__auto__ = null;
           var state_machine__5070__auto____0 = function() {
-            var statearr_218513 = new Array(8);
-            statearr_218513[0] = state_machine__5070__auto__;
-            statearr_218513[1] = 1;
-            return statearr_218513
+            var statearr_13483 = new Array(9);
+            statearr_13483[0] = state_machine__5070__auto__;
+            statearr_13483[1] = 1;
+            return statearr_13483
           };
-          var state_machine__5070__auto____1 = function(state_218505) {
+          var state_machine__5070__auto____1 = function(state_13474) {
             while(true) {
-              var result__5071__auto__ = switch__5069__auto__.call(null, state_218505);
+              var result__5071__auto__ = switch__5069__auto__.call(null, state_13474);
               if(cljs.core.keyword_identical_QMARK_.call(null, result__5071__auto__, new cljs.core.Keyword(null, "recur", "recur", 1122293407))) {
                 continue
               }else {
@@ -36642,12 +36648,12 @@ cljs.flocky.draw_loop_BANG_ = function draw_loop_BANG_() {
               break
             }
           };
-          state_machine__5070__auto__ = function(state_218505) {
+          state_machine__5070__auto__ = function(state_13474) {
             switch(arguments.length) {
               case 0:
                 return state_machine__5070__auto____0.call(this);
               case 1:
-                return state_machine__5070__auto____1.call(this, state_218505)
+                return state_machine__5070__auto____1.call(this, state_13474)
             }
             throw new Error("Invalid arity: " + arguments.length);
           };
@@ -36658,9 +36664,9 @@ cljs.flocky.draw_loop_BANG_ = function draw_loop_BANG_() {
       }(switch__5069__auto__)
     }();
     var state__5121__auto__ = function() {
-      var statearr_218514 = f__5120__auto__.call(null);
-      statearr_218514[cljs.core.async.impl.ioc_helpers.USER_START_IDX] = c__5119__auto__;
-      return statearr_218514
+      var statearr_13484 = f__5120__auto__.call(null);
+      statearr_13484[cljs.core.async.impl.ioc_helpers.USER_START_IDX] = c__5119__auto__;
+      return statearr_13484
     }();
     return cljs.core.async.impl.ioc_helpers.run_state_machine_wrapped.call(null, state__5121__auto__)
   });

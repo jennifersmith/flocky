@@ -9,43 +9,45 @@
 
 (def anim-delay 50)
 ;; pix / ms
-(def speed 0.01)
-
-(def delta (* speed anim-delay))
+(def max-speed 0.05)
 
 (defn rand-ints [n] (repeatedly #(rand-int n)))
 
+(defn starting-position []
+  {:coords
+   [(rand-int size) (rand-int size)]})
+
 (defn rand-bird [id]
-  {:x (rand-int size) :y (rand-int size) :r 1 :heading 0 :id id})
+  {:delta (* anim-delay (* max-speed (rand))) :r 1 :heading 0 :id id})
 
 (defn wrap-coord [n]
   (cond (> n size) (- n size)
         (< n 0) (- n size)
         :else n))
 
-(defn update-position [{:keys [x y] :as result}]
-  (let [[x y] (map (comp #(+ % delta) wrap-coord) [x y])]
-    (merge result {:x x :y y})))
-
-(defn inc-bird [bird]
-  (-> bird
-      (update-position)))
+(defn update-position [{:keys [delta]} {:keys [coords] :as result}]
+  (let [new-coords
+        (->> coords
+             (map #(+ delta %))
+             (map wrap-coord))]
+    (assoc result :coords new-coords)))
 
 (defn init-world! []
   (js/initWorld size))
 
-(defn update-world! [birds]
+(defn update-world! [positions]
   (js/drawBirds
    (clj->js
-    (map clj->js birds))))
+    (map clj->js positions))))
 
 ;; basically absuing core async for a draw loop
 (defn draw-loop! []
   (init-world!)
-  (go (loop [the-birds (vec (map rand-bird (range nbirds)))]
-        (update-world! the-birds)
+  (go (loop [the-birds (vec (map rand-bird (range nbirds)))
+             positions (map starting-position the-birds)]
+        (update-world! positions)
         (<! (timeout anim-delay))
-        (recur (map inc-bird the-birds)))))
+        (recur the-birds (map update-position the-birds positions)))))
 
 ;; do stuff
 
