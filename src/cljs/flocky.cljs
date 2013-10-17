@@ -9,18 +9,19 @@
 
 (def anim-delay 50)
 ;; pix / ms
-(def max-speed 0.05)
+(def max-speed 0.1)
 (def min-speed 0.05)
 
 (defn rand-ints [n] (repeatedly #(rand-int n)))
 
 (defn starting-position []
-  {
-   :heading (* (rand) Math/PI 2)
+  {:heading (* (rand) Math/PI 2)
    :coords [(rand-int size) (rand-int size)]})
 
 (defn rand-bird [id]
-  {:delta (* anim-delay (+ min-speed (* max-speed (rand)))) :r 1  :id id})
+  {:delta (* anim-delay (+ min-speed (* max-speed (rand))))
+   :heading (* (rand) Math/PI 2)
+   :r 1  :id id})
 
 (defn wrap-coord [n]
   (cond (> n size) (- n size)
@@ -29,15 +30,14 @@
 
 (def xy-components (juxt Math/sin Math/cos))
 
-(defn update-position [{:keys [delta]} {:keys [coords heading] :as result}]
+(defn update-position [{:keys [delta heading]} {:keys [coords] :as result}]
   (let [
         components (map #(* delta %) (xy-components heading))
         new-coords
         (->> coords
              (map + components)
              (map wrap-coord))]
-    (assoc result :coords new-coords)
-    ))
+    (assoc result :coords new-coords)))
 
 (defn init-world! []
   (js/initWorld size))
@@ -52,7 +52,7 @@
   (init-world!)
   (go (loop [the-birds (vec (map rand-bird (range nbirds)))
              positions (map starting-position the-birds)]
-        (update-world! positions)
+        (update-world! (map merge positions the-birds))
         (<! (timeout anim-delay))
         (recur the-birds (map update-position the-birds positions)))))
 

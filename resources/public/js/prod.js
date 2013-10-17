@@ -1675,7 +1675,7 @@ var vc = function() {
 function yc(a) {
   return 0 <= a ? Math.floor.b ? Math.floor.b(a) : Math.floor.call(null, a) : Math.ceil.b ? Math.ceil.b(a) : Math.ceil.call(null, a)
 }
-function Ac(a) {
+function zc(a) {
   return yc((a - a % 2) / 2)
 }
 var Bc = function() {
@@ -2373,17 +2373,17 @@ function Zc(a, b, c) {
   if(17 === b) {
     return a.Nc ? a.Nc(c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la) : a.Nc ? a.Nc(c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la) : a.call(null, c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la)
   }
-  var wa = E(Za), zc = F(Za);
+  var wa = E(Za), Ac = F(Za);
   if(18 === b) {
     return a.Oc ? a.Oc(c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa) : a.Oc ? a.Oc(c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa) : a.call(null, c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa)
   }
-  Za = E(zc);
-  zc = F(zc);
+  Za = E(Ac);
+  Ac = F(Ac);
   if(19 === b) {
     return a.Pc ? a.Pc(c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa, Za) : a.Pc ? a.Pc(c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa, Za) : a.call(null, c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa, Za)
   }
-  var Xb = E(zc);
-  F(zc);
+  var Xb = E(Ac);
+  F(Ac);
   if(20 === b) {
     return a.Qc ? a.Qc(c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa, Za, Xb) : a.Qc ? a.Qc(c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa, Za, Xb) : a.call(null, c, d, e, f, h, a, k, l, m, n, r, v, G, C, S, aa, la, wa, Za, Xb)
   }
@@ -3457,7 +3457,7 @@ q.Cb = function(a, b) {
 };
 q.$b = function() {
   if(y(this.mb)) {
-    return this.mb = !1, new Kd(null, Ac(this.$a), this.c, null)
+    return this.mb = !1, new Kd(null, zc(this.$a), this.c, null)
   }
   throw Error("persistent! called twice");
 };
@@ -3472,7 +3472,7 @@ q.W = function(a, b, c) {
 };
 q.M = function() {
   if(y(this.mb)) {
-    return Ac(this.$a)
+    return zc(this.$a)
   }
   throw Error("count after persistent!");
 };
@@ -4091,7 +4091,7 @@ var dc = function() {
     return b.call(this, d)
   }
   function b(a) {
-    return new Kd(null, Ac(R(a)), T.a(Xa, a), null)
+    return new Kd(null, zc(R(a)), T.a(Xa, a), null)
   }
   a.o = 0;
   a.h = function(a) {
@@ -8043,17 +8043,17 @@ function Xi() {
   return Ta([Si, 2 * Bc.j() * Math.PI, Ti, vd([Cc(1E3), Cc(1E3)])])
 }
 function Yi(a) {
-  return Ta([Vi, 50 * (0.05 + 0.05 * Bc.j()), Qi, 1, Wi, a])
+  return Ta([Vi, 50 * (0.05 + 0.1 * Bc.j()), Si, 2 * Bc.j() * Math.PI, Qi, 1, Wi, a])
 }
 function Zi(a) {
   return 1E3 < a ? a - 1E3 : 0 > a ? a - 1E3 : Ui ? a : null
 }
 var $i = ke.a(Math.sin, Math.cos);
 function aj(a, b) {
-  var c = sc(a) ? T.a(dc, a) : a, d = cc.a(c, Vi), c = sc(b) ? T.a(dc, b) : b, e = cc.a(c, Si), f = cc.a(c, Ti), e = dd.a(function(a) {
-    return d * a
-  }, $i.b ? $i.b(e) : $i.call(null, e)), f = dd.a(Zi, dd.d(xc, e, f));
-  return ec.d(c, Ti, f)
+  var c = sc(a) ? T.a(dc, a) : a, d = cc.a(c, Si), e = cc.a(c, Vi), c = sc(b) ? T.a(dc, b) : b, f = cc.a(c, Ti), d = dd.a(function(a) {
+    return e * a
+  }, $i.b ? $i.b(d) : $i.call(null, d)), d = dd.a(Zi, dd.d(xc, d, f));
+  return ec.d(c, Ti, d)
 }
 function bj() {
   initWorld(1E3);
@@ -8093,14 +8093,14 @@ function bj() {
         var b = a[1];
         if(4 === b) {
           var b = a[5], c = a[6], h = a[2], c = dd.d(aj, b, c);
-          a[5] = b;
           a[7] = h;
+          a[5] = b;
           a[6] = c;
           a[2] = null;
           a[1] = 2;
           return Ri
         }
-        return 3 === b ? (b = a[2], li(a, b)) : 2 === b ? (c = a[6], b = drawBirds(ze(dd.a(ze, c))), h = Oi(), a[8] = b, ki(a, h)) : 1 === b ? (b = je.b(100), b = dd.a(Yi, b), b = wd(b), h = dd.a(Xi, b), a[5] = b, a[6] = h, a[2] = null, a[1] = 2, Ri) : null
+        return 3 === b ? (b = a[2], li(a, b)) : 2 === b ? (b = a[5], c = a[6], b = dd.d(he, c, b), b = drawBirds(ze(dd.a(ze, b))), h = Oi(), a[8] = b, ki(a, h)) : 1 === b ? (b = je.b(100), b = dd.a(Yi, b), b = wd(b), h = dd.a(Xi, b), a[5] = b, a[6] = h, a[2] = null, a[1] = 2, Ri) : null
       })
     }(), c = function() {
       var c = b.j ? b.j() : b.call(null);
