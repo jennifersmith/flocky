@@ -36512,20 +36512,50 @@ goog.provide("cljs.flocky");
 goog.require("cljs.core");
 goog.require("cljs.core.async");
 goog.require("cljs.core.async");
-cljs.flocky.size = 100;
-cljs.flocky.anim_delay = 1E3;
+cljs.flocky.size = 1E3;
+cljs.flocky.nbirds = 20;
+cljs.flocky.anim_delay = 50;
+cljs.flocky.speed = 0.01;
+cljs.flocky.delta = cljs.flocky.speed * cljs.flocky.anim_delay;
 cljs.flocky.rand_ints = function rand_ints(n) {
   return cljs.core.repeatedly.call(null, function() {
     return cljs.core.rand_int.call(null, n)
   })
 };
 cljs.flocky.rand_bird = function rand_bird(id) {
-  return cljs.core.PersistentArrayMap.fromArray([new cljs.core.Keyword(null, "id", "id", 1013907597), id, new cljs.core.Keyword(null, "x", "x", 1013904362), cljs.core.rand_int.call(null, cljs.flocky.size), new cljs.core.Keyword(null, "y", "y", 1013904363), cljs.core.rand_int.call(null, cljs.flocky.size), new cljs.core.Keyword(null, "r", "r", 1013904356), 1], true)
+  return cljs.core.PersistentArrayMap.fromArray([new cljs.core.Keyword(null, "x", "x", 1013904362), cljs.core.rand_int.call(null, cljs.flocky.size), new cljs.core.Keyword(null, "y", "y", 1013904363), cljs.core.rand_int.call(null, cljs.flocky.size), new cljs.core.Keyword(null, "r", "r", 1013904356), 1, new cljs.core.Keyword(null, "heading", "heading", 1809215860), 0, new cljs.core.Keyword(null, "id", "id", 1013907597), id], true)
 };
-cljs.flocky.lots_of_birds = function lots_of_birds() {
-  return cljs.core.map.call(null, cljs.flocky.rand_bird, cljs.core.range.call(null))
+cljs.flocky.wrap_coord = function wrap_coord(n) {
+  if(n > cljs.flocky.size) {
+    return n - cljs.flocky.size
+  }else {
+    if(n < 0) {
+      return n - cljs.flocky.size
+    }else {
+      if(new cljs.core.Keyword(null, "else", "else", 1017020587)) {
+        return n
+      }else {
+        return null
+      }
+    }
+  }
 };
-console.log("Hai6");
+cljs.flocky.update_position = function update_position(p__218462) {
+  var map__218465 = p__218462;
+  var map__218465__$1 = cljs.core.seq_QMARK_.call(null, map__218465) ? cljs.core.apply.call(null, cljs.core.hash_map, map__218465) : map__218465;
+  var result = map__218465__$1;
+  var y = cljs.core.get.call(null, map__218465__$1, new cljs.core.Keyword(null, "y", "y", 1013904363));
+  var x = cljs.core.get.call(null, map__218465__$1, new cljs.core.Keyword(null, "x", "x", 1013904362));
+  var vec__218466 = cljs.core.map.call(null, cljs.core.comp.call(null, function(p1__218461_SHARP_) {
+    return p1__218461_SHARP_ + cljs.flocky.delta
+  }, cljs.flocky.wrap_coord), cljs.core.PersistentVector.fromArray([x, y], true));
+  var x__$1 = cljs.core.nth.call(null, vec__218466, 0, null);
+  var y__$1 = cljs.core.nth.call(null, vec__218466, 1, null);
+  return cljs.core.merge.call(null, result, cljs.core.PersistentArrayMap.fromArray([new cljs.core.Keyword(null, "x", "x", 1013904362), x__$1, new cljs.core.Keyword(null, "y", "y", 1013904363), y__$1], true))
+};
+cljs.flocky.inc_bird = function inc_bird(bird) {
+  return cljs.flocky.update_position.call(null, bird)
+};
 cljs.flocky.init_world_BANG_ = function init_world_BANG_() {
   return initWorld(cljs.flocky.size)
 };
@@ -36537,39 +36567,53 @@ cljs.flocky.draw_loop_BANG_ = function draw_loop_BANG_() {
   var c__5119__auto__ = cljs.core.async.chan.call(null, 1);
   cljs.core.async.impl.dispatch.run.call(null, function() {
     var f__5120__auto__ = function() {
-      var switch__5069__auto__ = function(state_53028) {
-        var state_val_53029 = state_53028[1];
-        if(state_val_53029 === 4) {
-          var inst_53020 = state_53028[2];
-          var inst_53021 = cljs.flocky.lots_of_birds.call(null);
-          var inst_53022 = cljs.core.take.call(null, 20, inst_53021);
-          var inst_53023 = cljs.flocky.update_world_BANG_.call(null, inst_53022);
-          var state_53028__$1 = function() {
-            var statearr_53030 = state_53028;
-            statearr_53030[5] = inst_53023;
-            statearr_53030[6] = inst_53020;
-            return statearr_53030
+      var switch__5069__auto__ = function(state_218505) {
+        var state_val_218506 = state_218505[1];
+        if(state_val_218506 === 4) {
+          var inst_218494 = state_218505[5];
+          var inst_218499 = state_218505[2];
+          var inst_218500 = cljs.core.map.call(null, cljs.flocky.inc_bird, inst_218494);
+          var inst_218494__$1 = inst_218500;
+          var state_218505__$1 = function() {
+            var statearr_218507 = state_218505;
+            statearr_218507[6] = inst_218499;
+            statearr_218507[5] = inst_218494__$1;
+            return statearr_218507
           }();
-          var statearr_53031_53036 = state_53028__$1;
-          statearr_53031_53036[2] = null;
-          statearr_53031_53036[1] = 2;
+          var statearr_218508_218515 = state_218505__$1;
+          statearr_218508_218515[2] = null;
+          statearr_218508_218515[1] = 2;
           return new cljs.core.Keyword(null, "recur", "recur", 1122293407)
         }else {
-          if(state_val_53029 === 3) {
-            var inst_53026 = state_53028[2];
-            var state_53028__$1 = state_53028;
-            return cljs.core.async.impl.ioc_helpers.return_chan.call(null, state_53028__$1, inst_53026)
+          if(state_val_218506 === 3) {
+            var inst_218503 = state_218505[2];
+            var state_218505__$1 = state_218505;
+            return cljs.core.async.impl.ioc_helpers.return_chan.call(null, state_218505__$1, inst_218503)
           }else {
-            if(state_val_53029 === 2) {
-              var inst_53018 = cljs.core.async.timeout.call(null, cljs.flocky.anim_delay);
-              var state_53028__$1 = state_53028;
-              return cljs.core.async.impl.ioc_helpers.take_BANG_.call(null, state_53028__$1, 4, inst_53018)
+            if(state_val_218506 === 2) {
+              var inst_218494 = state_218505[5];
+              var inst_218496 = cljs.flocky.update_world_BANG_.call(null, inst_218494);
+              var inst_218497 = cljs.core.async.timeout.call(null, cljs.flocky.anim_delay);
+              var state_218505__$1 = function() {
+                var statearr_218509 = state_218505;
+                statearr_218509[7] = inst_218496;
+                return statearr_218509
+              }();
+              return cljs.core.async.impl.ioc_helpers.take_BANG_.call(null, state_218505__$1, 4, inst_218497)
             }else {
-              if(state_val_53029 === 1) {
-                var state_53028__$1 = state_53028;
-                var statearr_53032_53037 = state_53028__$1;
-                statearr_53032_53037[2] = null;
-                statearr_53032_53037[1] = 2;
+              if(state_val_218506 === 1) {
+                var inst_218491 = cljs.core.range.call(null, cljs.flocky.nbirds);
+                var inst_218492 = cljs.core.map.call(null, cljs.flocky.rand_bird, inst_218491);
+                var inst_218493 = cljs.core.vec.call(null, inst_218492);
+                var inst_218494 = inst_218493;
+                var state_218505__$1 = function() {
+                  var statearr_218510 = state_218505;
+                  statearr_218510[5] = inst_218494;
+                  return statearr_218510
+                }();
+                var statearr_218511_218516 = state_218505__$1;
+                statearr_218511_218516[2] = null;
+                statearr_218511_218516[1] = 2;
                 return new cljs.core.Keyword(null, "recur", "recur", 1122293407)
               }else {
                 return null
@@ -36582,14 +36626,14 @@ cljs.flocky.draw_loop_BANG_ = function draw_loop_BANG_() {
         return function() {
           var state_machine__5070__auto__ = null;
           var state_machine__5070__auto____0 = function() {
-            var statearr_53034 = new Array(7);
-            statearr_53034[0] = state_machine__5070__auto__;
-            statearr_53034[1] = 1;
-            return statearr_53034
+            var statearr_218513 = new Array(8);
+            statearr_218513[0] = state_machine__5070__auto__;
+            statearr_218513[1] = 1;
+            return statearr_218513
           };
-          var state_machine__5070__auto____1 = function(state_53028) {
+          var state_machine__5070__auto____1 = function(state_218505) {
             while(true) {
-              var result__5071__auto__ = switch__5069__auto__.call(null, state_53028);
+              var result__5071__auto__ = switch__5069__auto__.call(null, state_218505);
               if(cljs.core.keyword_identical_QMARK_.call(null, result__5071__auto__, new cljs.core.Keyword(null, "recur", "recur", 1122293407))) {
                 continue
               }else {
@@ -36598,12 +36642,12 @@ cljs.flocky.draw_loop_BANG_ = function draw_loop_BANG_() {
               break
             }
           };
-          state_machine__5070__auto__ = function(state_53028) {
+          state_machine__5070__auto__ = function(state_218505) {
             switch(arguments.length) {
               case 0:
                 return state_machine__5070__auto____0.call(this);
               case 1:
-                return state_machine__5070__auto____1.call(this, state_53028)
+                return state_machine__5070__auto____1.call(this, state_218505)
             }
             throw new Error("Invalid arity: " + arguments.length);
           };
@@ -36614,15 +36658,14 @@ cljs.flocky.draw_loop_BANG_ = function draw_loop_BANG_() {
       }(switch__5069__auto__)
     }();
     var state__5121__auto__ = function() {
-      var statearr_53035 = f__5120__auto__.call(null);
-      statearr_53035[cljs.core.async.impl.ioc_helpers.USER_START_IDX] = c__5119__auto__;
-      return statearr_53035
+      var statearr_218514 = f__5120__auto__.call(null);
+      statearr_218514[cljs.core.async.impl.ioc_helpers.USER_START_IDX] = c__5119__auto__;
+      return statearr_218514
     }();
     return cljs.core.async.impl.ioc_helpers.run_state_machine_wrapped.call(null, state__5121__auto__)
   });
   return c__5119__auto__
 };
 jQuery(document).ready(function() {
-  cljs.flocky.draw_loop_BANG_.call(null);
-  return console.log("here")
+  return cljs.flocky.draw_loop_BANG_.call(null)
 });

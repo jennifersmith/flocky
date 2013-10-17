@@ -13,12 +13,12 @@
     window.initWorld = function(size){
     egs.fill = d3.scale.category20c();
     egs.scaleX = d3.scale.linear().domain([0, size]).range([0,1000]);
-    egs.scaleY = d3.scale.linear().domain([0, size]).range([0,1000]);
+    egs.scaleY = d3.scale.linear().domain([0, size]).range([0,500]);
 
     d3.select("#container").select("svg").remove();
     egs.vis =  d3.select("#container").append("svg")
     .attr("width", 1000)
-    .attr("height", 1000)
+    .attr("height", 500)
     .attr("class", "stuff")
     .attr("style", "border: 1px green solid; background-color:black");
     
@@ -26,7 +26,7 @@
     };
 
     drawBirds = function(birds) {
-    console.log(birds[0].x);
+    console.log(birds);
     var node = egs.vis.selectAll("g.node")
     .data(birds, function(d){return d.id})
     .attr("transform", function(d) { return "translate(" + egs.scaleX(d.x) + "," + egs.scaleY(d.y) + ")"; })
