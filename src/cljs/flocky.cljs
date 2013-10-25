@@ -4,7 +4,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def size 1000)
-(def nbirds 10)
+(def nbirds 100)
 ;; basically timeout between drawing frames
 
 (def anim-delay 50)
