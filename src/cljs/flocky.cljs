@@ -4,7 +4,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def size 1000)
-(def nbirds 100)
+(def nbirds 1000)
 ;; basically timeout between drawing frames
 
 (def anim-delay 50)
@@ -67,22 +67,37 @@
 
 ;; pieceofcrap
 (defn get-neighbours [birds bird-positions]
-  (let [birds-and-pos (map vector birds bird-positions)]
-    (for [[b p] birds-and-pos]
-      (remove #(= b (first %))
-              (map vector
-                   birds
-                   (map #(separation p %) bird-positions))))))
 
-(defn update-bird [bird neighbours]
+  (comment  (let [birds-and-pos (map vector birds bird-positions)]
+              (for [[b p] birds-and-pos]
+                (remove #(= b (first %))
+                        (map vector
+                             birds
+                             (map #(separation p %) bird-positions))))))
+  bird-positions)
+
+;; segment the birds up according to zones that are multiples of the min sep. Even if we compare bird with birds in the 9 quadrants round him, still probably cheaper compare
+
+(defn get-zones [birds bird-positions]
+  (let [zone-size (* 2 min-separation)
+        x-zone #(quot (first %) zone-size)
+        y-zone #(quot (last %) zone-size)
+        zone (juxt x-zone y-zone)]
+    (map zone (map :coords bird-positions))))
+
+(defn update-bird [bird neighbours zone]
   (let [turn-by (* min-turn )
         in-range (filter #(in-range? (second %)) neighbours)]
+
     (-> bird
-        (assoc :col (count in-range))
+        (assoc :col zone)
         (update-in [:heading] (partial + turn-by)))))
 
 (defn init-world! []
-  (js/initWorld size))
+  (js/initWorld size
+                (clj->js
+                 (take-while #(<= % size) (iterate #(+ % (* min-separation 2)) 0)))
+                ))
 
 (defn update-world! [positions]
   (js/drawBirds
@@ -97,7 +112,8 @@
         (update-world! (map merge positions the-birds))
         (<! (timeout anim-delay))
         (recur (map update-bird the-birds
-                    (get-neighbours the-birds positions))
+                    (get-neighbours the-birds positions)
+                    (get-zones the-birds positions))
                (map update-position the-birds positions)))))
 
 ;; do stuff

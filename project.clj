@@ -28,4 +28,5 @@
                        {:source-paths ["src/cljs"]
                         :compiler {:output-to "resources/public/js/prod.js"
                                    :optimizations :advanced}}}}
-  :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]})
+  :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]
+                 :init (use 'flocky.repl)})
