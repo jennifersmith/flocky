@@ -43,13 +43,20 @@
              (map wrap-coord))]
     (assoc result :coords new-coords)))
 
-(def separation (memoize (fn [pos1 pos2]
-                           (Math/sqrt
-                            (apply +
-                                   (map #(Math/pow % 2)
-                                        (map -
-                                             (:coords pos1)
-                                             (:coords pos2))))))))
+
+ (def separation (memoize (fn [pos1 pos2]
+                              (Math/sqrt
+                               (apply +
+                                      (map #(Math/pow % 2)
+                                           (map -
+                                                (:coords pos1)
+                                                (:coords pos2))))))))
+
+ (def separation (memoize (fn [pos1 pos2]
+                            (let [[[x1 y1] [x2 y2]] (map :coords [pos1 pos2]) ])
+                              (Math/sqrt
+                               (+ (Math/pow (- x1 x2) 2)
+                                  (Math/pow (- y1 y2) 2))))))
 
 (defn all-differences [positions]
   (vec
@@ -69,7 +76,7 @@
 ;; pieceofcrap
 
 (defn get-neighbours [birds bird-positions]
-  ;;(take nbirds (repeat []))
+  #_(take nbirds (repeat []))
   (for [bird bird-positions] 
     (for [other-bird bird-positions 
           :let [sep (separation bird other-bird)] 
@@ -114,8 +121,18 @@
                     (get-zones the-birds positions))
                (map update-position the-birds positions)))))
 
+(defn non-draw-loop! [times]
+  (time (let [
+             the-birds (vec (map rand-bird (range nbirds)))
+             positions (map starting-position the-birds)]
+          (time 
+           (dotimes [n times]
+             (mapv update-bird the-birds
+                   (get-neighbours the-birds positions)
+                   (get-zones the-birds positions)))))))
 ;; do stuff
+(set! *print-fn* (fn [& args] (js/console.log (clj->js (apply str args)))))
 
 (.ready (js/jQuery js/document)
-       (fn []
-         (draw-loop!)))
+        (fn []
+          (non-draw-loop! 100)))
