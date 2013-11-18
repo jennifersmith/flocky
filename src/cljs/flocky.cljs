@@ -4,10 +4,10 @@
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def size 1000)
-(def nbirds 1000)
+(def nbirds 100)
 ;; basically timeout between drawing frames
 
-(def anim-delay 50)
+(def anim-delay 25)
 ;; pix / ms
 (def max-speed 0.1)
 (def min-speed 0.05)
@@ -65,16 +65,16 @@
 (defn dmap [f c]
   (map #(map f %) c))
 
+;;(def separation (constantly 10000))
 ;; pieceofcrap
-(defn get-neighbours [birds bird-positions]
 
-  (comment  (let [birds-and-pos (map vector birds bird-positions)]
-              (for [[b p] birds-and-pos]
-                (remove #(= b (first %))
-                        (map vector
-                             birds
-                             (map #(separation p %) bird-positions))))))
-  bird-positions)
+(defn get-neighbours [birds bird-positions]
+  ;;(take nbirds (repeat []))
+  (for [bird bird-positions] 
+    (for [other-bird bird-positions 
+          :let [sep (separation bird other-bird)] 
+          :when (< sep min-separation)]
+      sep)))
 
 ;; segment the birds up according to zones that are multiples of the min sep. Even if we compare bird with birds in the 9 quadrants round him, still probably cheaper compare
 
@@ -88,16 +88,14 @@
 (defn update-bird [bird neighbours zone]
   (let [turn-by (* min-turn )
         in-range (filter #(in-range? (second %)) neighbours)]
-
     (-> bird
-        (assoc :col zone)
+        (assoc :col (count neighbours))
         (update-in [:heading] (partial + turn-by)))))
 
 (defn init-world! []
   (js/initWorld size
                 (clj->js
-                 (take-while #(<= % size) (iterate #(+ % (* min-separation 2)) 0)))
-                ))
+                 (take-while #(<= % size) (iterate #(+ % (* min-separation 2)) 0)))))
 
 (defn update-world! [positions]
   (js/drawBirds
