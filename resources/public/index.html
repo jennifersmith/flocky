@@ -7,7 +7,11 @@
   <script src="js/dev.js"></script>
   <script type="text/javascript">
 
-
+    function superFastSep(p, q){
+      var d1 = p[0] - q[0],
+      d2 = p[1] - q[1];
+      return Math.sqrt(d1 * d1 + d2 * d2);
+    }
 
     evilGlobalState = {};
     egs = evilGlobalState;

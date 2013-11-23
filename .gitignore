@@ -14,3 +14,4 @@ pom.xml
 /.repl//out
 out/
 .repl/
+resources/public/js/
