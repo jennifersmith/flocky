@@ -1,17 +1,17 @@
 (ns cljs.flocky
   (:require [cljs.core.async :as async
              :refer [<! >! chan timeout alts!]])
-  (:require-macros [cljs.core.async.macros :refer [go]])
-  )
+  (:require-macros [cljs.core.async.macros :refer [go]])  )
+
 
 (def size 1000)
-(def nbirds 100)
+(def nbirds 40)
 ;; basically timeout between drawing frames
 
-(def anim-delay 40)
-;; pix / ms
-(def max-speed 0.1)
-(def min-speed 0.05)
+(def anim-delay 1)
+;; pix / ms?
+(def max-speed 30)
+(def min-speed 10)
 (def min-turn-percent 0.0005)
 (def min-turn (* 2 Math/PI min-turn-percent))
 (def vision 100)
@@ -26,6 +26,7 @@
 (defn rand-bird [id]
   {:delta (* anim-delay (+ min-speed (* max-speed (rand))))
    :heading (* (rand) Math/PI 2)
+   :col 0
    :r 1  :id id})
 
 (defn wrap-coord [n]
@@ -101,6 +102,7 @@
 (defn get-zone-neighbours [birds bird-positions]
   (let [zones (get-zones birds bird-positions)
         birds-by-zone (group-by first (map vector zones birds)) ]))
+
 (defn update-bird [bird neighbours zone]
   (let [turn-by (* min-turn )
         in-range (filter #(in-range? (second %)) neighbours)]
@@ -119,16 +121,24 @@
     (map clj->js positions))))
 
 ;; basically absuing core async for a draw loop
-(defn draw-loop! []
+(defn draw-loop! [draw-data-channel]
   (init-world!)
-  (go (loop [the-birds (map rand-bird (range nbirds))
-             positions (map starting-position the-birds)]
-        (update-world! (map merge positions the-birds))
+  (go (loop [birds {}]
+        (update-world! (vals birds))
         (<! (timeout anim-delay))
-        (recur (map update-bird the-birds
-                    (get-neighbours the-birds positions)
-                    (get-zones the-birds positions))
-               (map update-position the-birds positions)))))
+        (let [bird (<! draw-data-channel)]
+          (recur (assoc birds (:id bird) bird))))))
+
+
+(defn updater-loop [draw-data-channel]
+    (go (loop [the-birds (map rand-bird (range nbirds))
+             positions (map starting-position the-birds)]
+          (doseq [d (map merge positions the-birds)]
+            (>! draw-data-channel d))
+          (recur (map update-bird the-birds
+                      (get-neighbours the-birds positions)
+                      (get-zones the-birds positions))
+                 (map update-position the-birds positions)))))
 
 (defn neighbour-cals [times]
   (let [
@@ -171,6 +181,9 @@
 (.ready (js/jQuery js/document)
         (fn []
           (prn "I'm gonna draw stuff")
-          (draw-loop!)
+          (let [draw-data-channel (chan)]
+            (updater-loop draw-data-channel)
+            (draw-loop! draw-data-channel)
+            )
           #_(dotimes [n 3]
             (profile 100))))

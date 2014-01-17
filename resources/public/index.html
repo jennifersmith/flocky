@@ -41,7 +41,7 @@
     .attr("height", 1000)
     .attr("class", "stuff")
     .attr("style", "border: 1px green solid; background-color:black");
-console.log(breaks);    
+
     egs.vis.selectAll("line.xGrid").data(breaks).enter()
     .append("line")
         .attr(
@@ -77,7 +77,8 @@ console.log(breaks);
     };
 
     drawBirds = function(birds) {
-//    console.log(birds[0].col, birds[0].coords[0], birds[0].coords[1]);
+  //   console.log(birds);
+// if (birds[0])   console.log(birds[0].col, birds[0].coords[0], birds[0].coords[1]);
     var node = egs.vis.selectAll("g.node")
     .data(birds)
     .attr("transform", function(d) { return "translate(" + egs.scaleX(d.coords[0]) + "," + egs.scaleY(d.coords[1]) + ")"; })
