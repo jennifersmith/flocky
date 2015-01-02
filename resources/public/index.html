@@ -29,7 +29,9 @@
        return "background-color:" +  d[1]});
     };
     window.initWorld = function(size, breaks){
+console.log(size +  " HERE");
    
+
     egs.scaleX = d3.scale.linear().domain([0, size]).range([0,1000]);
     egs.scaleY = d3.scale.linear().domain([0, size]).range([0,1000]);
 
@@ -37,8 +39,8 @@
     
     d3.select("#container").select("svg").remove();
     egs.vis =  d3.select("#container").append("svg")
-    .attr("width", 1000)
-    .attr("height", 1000)
+    .attr("width", 800)
+    .attr("height", 600)
     .attr("class", "stuff")
     .attr("style", "border: 1px green solid; background-color:black");
 
